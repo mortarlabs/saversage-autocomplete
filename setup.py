@@ -17,7 +17,7 @@ setup(
     description='An Autocomplete edit handler for Pages, Snippets, and more.',
     long_description=long_description,
 
-    url='https://github.com/wagtail/wagtail-autocomplete',
+    url='https://github.com/mortarlabs/saversage-autocomplete',
 
     author='Emily Horsman and Harris Lapiroff',
     author_email='me@emilyhorsman.com',

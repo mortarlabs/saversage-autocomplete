@@ -23,6 +23,7 @@ class AutocompleteInput extends PureComponent {
         value: '',
       },
       suggestions: [],
+      timer: null,
     };
 
     if (props.fetchInitialValues) {
@@ -63,21 +64,30 @@ class AutocompleteInput extends PureComponent {
     return value.map(({ id }) => id).join(',');
   }
 
+  updateSuggestions(value) {
+    return (function() {
+      return function() {
+        getSuggestions({
+          apiBase: this.props.apiBase,
+          query: value,
+          type: this.props.type,
+          exclude: this.getExclusions(),
+        }).then(items => {
+          this.setState({
+            suggestions: items
+          });
+        });
+      }
+    })(value);
+  }
+
   checkNewSuggestions(value, checkDifferent = true) {
     if (checkDifferent && value === this.state.value) {
       return;
     }
-
-    getSuggestions({
-      apiBase: this.props.apiBase,
-      query: value,
-      type: this.props.type,
-      exclude: this.getExclusions(),
-    }).then(items => {
-      this.setState({
-        suggestions: items
-      });
-    });
+    
+    clearTimeout(this.state.timer);
+    this.state.timer = setTimeout(this.updateSuggestions(value).bind(this), 500);
   }
 
   fetchInitialValues(value) {
