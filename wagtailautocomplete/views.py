@@ -100,6 +100,16 @@ class TrieNode():
             trie.set_node(result['title'].lower(), result)
         return trie     
 
+def query_db(model, search_query, exclude):
+    field_name = getattr(model, 'autocomplete_search_field', 'title')
+    filter_kwargs = dict()
+    filter_kwargs[field_name + '__icontains'] = search_query
+    queryset = model.objects.filter(**filter_kwargs)
+    
+    apply_filters(queryset, exclude)
+
+    return map(render_page, queryset[:20])
+
 @require_GET
 def search(request):
     start = datetime.now()
@@ -126,17 +136,14 @@ def search(request):
             cache.set(cache_key, True, 60*60)
             results = results[:20]
         else:
-            field_name = getattr(model, 'autocomplete_search_field', 'title')
-            filter_kwargs = dict()
-            filter_kwargs[field_name + '__icontains'] = search_query
-            queryset = model.objects.filter(**filter_kwargs)
-            
-            apply_filters(queryset, exclude)
-
-            results = map(render_page, queryset[:20])
+            results = query_db(model, search_query, exclude)
     else:
         first_letter = len(search_query[:1]) > 0 and search_query[:1] or "a"
-        results = cache.get("{}_{}".format(cache_key, first_letter)).get_items(search_query.lower()[1:])[:20]
+        first_letter_cache = cache.get("{}_{}".format(cache_key, first_letter))
+        if first_letter_cache:
+            results =  first_letter_cache.get_items(search_query.lower()[1:])[:20]
+        else:
+            results = query_db(model, search_query, exclude)
 
     return JsonResponse(dict(items=list(results)))
 
